@@ -66,6 +66,65 @@ class PostController extends AbstractController
          return $this->response($post);
     }
 
+    #[Route('/posts/{id}', name: 'posts_put', methods: ['PUT'])]
+    public function updatePost(PostRepository $postRepository, $id, Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        try{
+            $post = $postRepository->find($id);
+            if (!$post) {
+                $data = [
+                    'status' => 404,
+                    'errors' => "Post not found",
+                ];
+                return $this->response($data, 404);
+            }
+
+            $request = $this->transformJsonBody($request);
+            if (!$request->get('name') || !$request->get('description')) {
+                throw new \Exception();
+            }
+
+            $post->setName($request->get('name'));
+            $post->setDescription($request->get('description'));
+            $entityManager->flush();
+            $data = [
+                'status' => 200,
+                'errors' => "Post updated successfully",
+            ];
+            return $this->response($data);
+        } catch (\Exception $exception) {
+            $data = [
+                'status' => 422,
+                'errors' => "Data no valid",
+            ];
+            return $this->response($data, 422);
+        }
+    }
+
+    #[Route('/posts/{id}', name: 'posts_delete', methods: ["DELETE"])]
+    public function deletePost($id, PostRepository $postRepository, EntityManagerInterface $entityManager): JsonResponse
+    {
+        $post = $postRepository->find($id);
+
+        if (!$post){
+            $data = [
+                'status' => 404,
+                'errors' => "Post not found",
+            ];
+            return $this->response($data, 404);
+        }
+
+        $entityManager->remove($post);
+        $entityManager->flush();
+
+        $data = [
+            'status' => 200,
+            'errors' => "Post deleted successfully",
+        ];
+        return $this->response($data);
+
+    }
+
     private function response($data, $status = 200, $headers = []): JsonResponse
     {
         return new JsonResponse($data, $status, $headers);
