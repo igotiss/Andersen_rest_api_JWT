@@ -20,14 +20,10 @@ class PostController extends AbstractController
        return $this->response($data);
     }
 
-    private function response(array $data, $status = 200, $headers = [])
-    {
-        return new JsonResponse($data, $status, $headers);
-    }
 
     #[Route('/posts', name: 'posts_add', methods: ["POST"])]
-    public function addPost(Request $request, EntityManagerInterface $entityManager, PostRepository $postRepository){
-
+    public function addPost(Request $request, EntityManagerInterface $entityManager, PostRepository $postRepository): JsonResponse
+    {
         try{
             $request = $this->transformJsonBody($request);
 
@@ -54,10 +50,26 @@ class PostController extends AbstractController
             ];
             return $this->response($data, 422);
         }
-
     }
 
+    #[Route('/posts/{id}', name: 'posts_get', methods: ["GET"])]
+    public function getPost(PostRepository $postRepository, $id): JsonResponse
+    {
+        $post = $postRepository->find($id);
+         if (!$post) {
+             $data = [
+                 'status' => 404,
+                 'errors' => "Post not found",
+             ];
+             return $this->response($data, 404);
+         }
+         return $this->response($post);
+    }
 
+    private function response($data, $status = 200, $headers = []): JsonResponse
+    {
+        return new JsonResponse($data, $status, $headers);
+    }
     protected function transformJsonBody(Request $request): Request
     {
         $data = json_decode($request->getContent(), true);
